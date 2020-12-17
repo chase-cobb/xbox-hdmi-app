@@ -21,6 +21,8 @@ VersionCode* GetFirmwareVersion();
 VersionCode* GetKernelPatchVersion();
 
 // get bootloader mode
+bool GetBootloaderMode(ULONG* bootMode);
+
 // get compile time
 // get programming status
 // get program full

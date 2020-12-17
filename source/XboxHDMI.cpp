@@ -94,3 +94,12 @@ VersionCode* XboxHDMI::GetKernelPatchVersion()
 
     return nullptr;
 }
+
+bool XboxHDMI::GetBootloaderMode(ULONG* bootMode)
+{
+    if(HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_BOOT_MODE, false, bootMode) != 0)
+    {
+        return true;
+    }
+    return false;
+}
