@@ -10,6 +10,8 @@
 
 #include "common.h"
 #include "i2c_map.h"
+#include "VersionCode.h"
+#include "XboxHDMI.h"
 
 extern SDL_Renderer *gRenderer;
 extern TTF_Font *gFontSmall;
@@ -24,28 +26,30 @@ Scene0::Scene0() {
   current_item = 0;
 
   // Attempt to recieve firmware version
-  ULONG smbus_read;
+  // ULONG smbus_read;
 
-  //
-  if(HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_FIRMWARE_VERSION + 0, false, &smbus_read) != 0) {
-    snprintf(text_buffer, sizeof(text_buffer), "XboxHDMI not detected!");
-  } else {
-    firmware_version[0] = (uint8_t)smbus_read;
+  // //
+  // if(HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_FIRMWARE_VERSION + 0, false, &smbus_read) != 0) {
+  //   snprintf(text_buffer, sizeof(text_buffer), "XboxHDMI not detected!");
+  // } else {
+  //   firmware_version[0] = (uint8_t)smbus_read;
 
-    HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_FIRMWARE_VERSION + 1, false, &smbus_read);
-    firmware_version[1] = (uint8_t)smbus_read;
+  //   HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_FIRMWARE_VERSION + 1, false, &smbus_read);
+  //   firmware_version[1] = (uint8_t)smbus_read;
 
-    HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_FIRMWARE_VERSION + 2, false, &smbus_read);
-    firmware_version[2] = (uint8_t)smbus_read;
+  //   HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_FIRMWARE_VERSION + 2, false, &smbus_read);
+  //   firmware_version[2] = (uint8_t)smbus_read;
 
-    // Firmware 1.0.0 will incorrectly report 0.0.0, so let's fix that.
-    if(firmware_version[0] == 0 && firmware_version[1] == 0 && firmware_version[2] == 0) {
-      firmware_version[0] = 1;
-    }
+  //   // Firmware 1.0.0 will incorrectly report 0.0.0, so let's fix that.
+  //   if(firmware_version[0] == 0 && firmware_version[1] == 0 && firmware_version[2] == 0) {
+  //     firmware_version[0] = 1;
+  //   }
 
     snprintf(text_buffer, sizeof(text_buffer), "Firmware Version: %u.%u.%u",
-      firmware_version[0], firmware_version[1], firmware_version[2]);
-  }
+      XboxHDMI::GetInstance()->GetFirmwareVersion()->GetMajor(), 
+      XboxHDMI::GetInstance()->GetFirmwareVersion()->GetMinor(), 
+      XboxHDMI::GetInstance()->GetFirmwareVersion()->GetPatch());
+  //}
 
   info_line[0] = drawText(gFontSmall, font_color, text_buffer);
   SDL_QueryTexture(info_line[0], NULL, NULL,

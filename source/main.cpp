@@ -17,6 +17,7 @@
 #endif
 
 #include "common.h"
+#include "XboxHDMI.h"
 #include "scene.h"
 #include "scene0.h"
 #include "scene1.h"
@@ -143,6 +144,9 @@ int main(void) {
     Sleep(2000);
     return 0;
   }
+
+  // Cache XboxHDMI info
+  XboxHDMI::GetInstance()->CacheInfo();
 
   // Main render loop
   Scene *currentScene = new Scene0();
