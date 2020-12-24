@@ -9,7 +9,7 @@
 
 class Scene {
  public:
-  Scene(){};
+  Scene(){} = 0; // Keep class pure virtual
   virtual ~Scene(){};
   virtual void event(SDL_Event event){};
   virtual void render(SDL_Renderer *renderer){};
