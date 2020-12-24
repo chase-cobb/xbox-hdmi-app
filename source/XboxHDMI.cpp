@@ -9,6 +9,7 @@ XboxHDMI::XboxHDMI()
     m_isHardwareDetected = false;
     m_firmwareVersion = nullptr;
     m_kernelPatchVersion = nullptr;
+    m_chachedDataIsDirty = true;
 }
 
 XboxHDMI::~XboxHDMI()
@@ -38,6 +39,12 @@ XboxHDMI* XboxHDMI::GetInstance()
     {
         m_instance = new XboxHDMI();
     }
+    
+    if(m_chachedDataIsDirty)
+    {
+        CacheInfo();
+    }
+    
     return m_instance;
 }
 
@@ -98,4 +105,9 @@ VersionCode* XboxHDMI::GetKernelPatchVersion()
 bool XboxHDMI::GetBootloaderMode(ULONG* bootMode)
 {
     return (HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_BOOT_MODE, false, bootMode) == 0);
+}
+
+bool XboxHDMI::SetBootloaderMode(ULONG dataValue, bool writeWordValue = false)
+{
+    return (HalWriteSMBusValue(I2C_HDMI_ADRESS, I2C_LOAD_APP, writeWordValue, dataValue) == 0);
 }
