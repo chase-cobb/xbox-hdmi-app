@@ -17,10 +17,12 @@
 #include "common.h"
 #include "i2c_map.h"
 #include "scene2.h"
+#include "HdmiTools.h"
 
 extern SDL_Window *window;
 extern SDL_Renderer *gRenderer;
 extern TTF_Font *gFont;
+extern Conflux::HdmiTools* hdmi_tools;
 
 extern uint8_t load_scene;
 
@@ -68,8 +70,8 @@ Scene2::Scene2() {
   SDL_SetTextureBlendMode(menu_backdrop, SDL_BLENDMODE_BLEND);
   SDL_SetTextureAlphaMod(menu_backdrop, 150);
 
-  //
-  readConfig();
+  // Conflux loads feature configuration whenever
+  // it is initialized... so no need to do it again.
 }
 
 Scene2::~Scene2(void) {
@@ -77,51 +79,15 @@ Scene2::~Scene2(void) {
   SDL_DestroyTexture(menu_backdrop);
 }
 
-void Scene2::readConfig() {
-#ifdef _XBOX
-  ULONG current_video_widescreen;
-  ULONG current_mode_out;
-  ULONG current_video_adjust_luma = 0;
-  ULONG current_video_adjust_cb = 0;
-  ULONG current_video_adjust_cr = 0;
-
-  HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_WIDESCREEN, false,
-                    &current_video_widescreen);
-  HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_MODE_OUT, false,
-                    &current_mode_out);
-  HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_ADJUST_LUMA, false,
-                    &current_video_adjust_luma);
-  HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_ADJUST_CB, false,
-                    &current_video_adjust_cb);
-  HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_ADJUST_CR, false,
-                    &current_video_adjust_cr);
-
-  video_widescreen = (int8_t)current_video_widescreen;
-  video_mode_out = (int8_t)current_mode_out;
-  video_adjust_luma = (int8_t)current_video_adjust_luma;
-  video_adjust_cb = (int8_t)current_video_adjust_cb;
-  video_adjust_cr = (int8_t)current_video_adjust_cr;
-#endif
-}
-
 void Scene2::updateConfig() {
 #ifdef _XBOX
-  HalWriteSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_WIDESCREEN, 0,
-                     (ULONG)video_widescreen);
-  HalWriteSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_MODE_OUT, 0,
-                     (ULONG)video_mode_out);
-  HalWriteSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_ADJUST_LUMA, 0,
-                     (ULONG)video_adjust_luma);
-  HalWriteSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_ADJUST_CB, 0,
-                     (ULONG)video_adjust_cb);
-  HalWriteSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_ADJUST_CR, 0,
-                     (ULONG)video_adjust_cr);
+  hdmi_tools->UpdateFeatureConfig();
 #endif
 }
 
 void Scene2::saveConfig() {
 #ifdef _XBOX
-  HalWriteSMBusValue(I2C_HDMI_ADRESS, I2C_EEPROM_SAVE, 0, (ULONG)0xFF);
+  hdmi_tools->SaveSettings();
 #endif
 }
 
@@ -153,23 +119,26 @@ void Scene2::event(SDL_Event event) {
           } else {
             // Video Luma
             if (cursor_pos == 5) {
-              video_adjust_luma = MAX(video_adjust_luma - 1, -12);
+              int current_value = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::LUMA_ADJUST)->GetValue();
+              hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::LUMA_ADJUST, --current_value);
               text_dirty = true;
             }
             // Video Cb
             if (cursor_pos == 6) {
-              video_adjust_cb = MAX(video_adjust_cb - 1, -12);
+              int current_value = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::CB_ADJUST)->GetValue();
+              hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::CB_ADJUST, --current_value);
               text_dirty = true;
             }
             // Video Cr
             if (cursor_pos == 7) {
-              video_adjust_cr = MAX(video_adjust_cr - 1, -12);
+              int current_value = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::CR_ADJUST)->GetValue();
+              hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::CR_ADJUST, --current_value);
               text_dirty = true;
             }
             if (cursor_pos == 5 || cursor_pos == 6 || cursor_pos == 7) {
               if (video_adjust_luma != 0 || video_adjust_cb != 0 ||
                   video_adjust_cr != 0) {
-                video_mode_out = 1;
+                hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::VIDEO_MODE_ADJUST, 1);
               }
               updateConfig();
             }
@@ -181,23 +150,26 @@ void Scene2::event(SDL_Event event) {
           } else {
             // Video Luma
             if (cursor_pos == 5) {
-              video_adjust_luma = MIN(video_adjust_luma + 1, 12);
+              int current_value = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::LUMA_ADJUST)->GetValue();
+              hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::LUMA_ADJUST, ++current_value);
               text_dirty = true;
             }
             // Video Cb
             if (cursor_pos == 6) {
-              video_adjust_cb = MIN(video_adjust_cb + 1, 12);
+              int current_value = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::CB_ADJUST)->GetValue();
+              hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::CB_ADJUST, ++current_value);
               text_dirty = true;
             }
             // Video Cr
             if (cursor_pos == 7) {
-              video_adjust_cr = MIN(video_adjust_cr + 1, 12);
+              int current_value = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::CR_ADJUST)->GetValue();
+              hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::CR_ADJUST, ++current_value);
               text_dirty = true;
             }
             if (cursor_pos == 5 || cursor_pos == 6 || cursor_pos == 7) {
               if (video_adjust_luma != 0 || video_adjust_cb != 0 ||
                   video_adjust_cr != 0) {
-                video_mode_out = 1;
+                hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::VIDEO_MODE_ADJUST, 1);
               }
               updateConfig();
             }
@@ -209,21 +181,20 @@ void Scene2::event(SDL_Event event) {
       // A Button
       if (event.jbutton.button == 0) {
         if (cursor_pos == 0 || cursor_pos == 1 || cursor_pos == 2) {
-          video_widescreen = cursor_pos;
+          hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::WIDESCREEN_ADJUST, cursor_pos);
           updateConfig();
         }
         if (cursor_pos == 3) {
-          video_mode_out = 0;
-
-          video_adjust_luma = 0;
-          video_adjust_cb = 0;
-          video_adjust_cr = 0;
+          hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::VIDEO_MODE_ADJUST, 0);
+          hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::LUMA_ADJUST, 0);
+          hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::CB_ADJUST, 0);
+          hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::CR_ADJUST, 0);
 
           text_dirty = true;
           updateConfig();
         }
         if (cursor_pos == 4) {
-          video_mode_out = 1;
+          hdmi_tools->SetFeatureValue(Conflux::SupportedFeatures::VIDEO_MODE_ADJUST, 1);
           updateConfig();
         }
       }
@@ -268,6 +239,12 @@ void Scene2::recalcSliders(void) {
   char video_luma_text[12];
   char video_cb_text[12];
   char video_cr_text[12];
+
+  video_adjust_cr = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::CR_ADJUST)->GetValue();
+  video_adjust_cb = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::CB_ADJUST)->GetValue();
+  video_adjust_luma = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::LUMA_ADJUST)->GetValue();
+  video_widescreen = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::WIDESCREEN_ADJUST)->GetValue();
+  video_mode_out = hdmi_tools->GetConstFeatureMap().at(Conflux::SupportedFeatures::VIDEO_MODE_ADJUST)->GetValue();
 
   sprintf(video_luma_text, "%d", video_adjust_luma);
   sprintf(video_cb_text, "%d", video_adjust_cb);
