@@ -1,0 +1,3 @@
+[submodule "vendor/Conflux-HDMI"]
+	path = vendor/Conflux-HDMI
+	url = https://github.com/chase-cobb/Conflux-HDMI
