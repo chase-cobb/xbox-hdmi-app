@@ -27,10 +27,13 @@ class Scene0 : public Scene {
   SDL_Texture *arrow_texture;
   const SDL_Color font_color = {0xFF, 0xFF, 0xFF, 0xFF};
 
-  SDL_Texture *info_line[2] = { NULL };
-  SDL_Rect info_line_pos[2] = {
-      {80, 420, 0, 0},  // Firmware Version
-      {80, 396, 0, 0},  // BIOS Patch Version
+  SDL_Texture *info_line[5] = { NULL };
+  SDL_Rect info_line_pos[5] = {
+      {80, 420 - (24 * 0), 0, 0},  // Firmware Version
+      {80, 420 - (24 * 1), 0, 0},  // BIOS Patch Version
+      {80, 420 - (24 * 2), 0, 0},  // Start update / update progress
+      {80, 420 - (24 * 3), 0, 0},  // Errors
+      {80, 420 - (24 * 4), 0, 0},  // Completion percentage
   };
 
   const SDL_Rect arrow_pos[4] = {

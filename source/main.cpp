@@ -10,6 +10,7 @@
 #include <hal/video.h>
 #include <hal/xbox.h>
 #include <windows.h>
+#include <mutex>
 #include "HdmiTools.h"
 #define FONT_PATH "D:\\assets\\fonts\\RobotoMono-Regular.ttf"
 #else
@@ -68,15 +69,26 @@ bool running = true;
 
 Conflux::HdmiTools* hdmi_tools;
 
+std::mutex mutex_object;
+
 bool firmware_update_available = false;
 bool start_firmware_update = false;
 bool firmware_update_started = false;
 bool firmware_update_in_progress = false;
 bool firmware_update_succeeded = false;
 
+std::string current_update_process;
+std::string current_update_error;
+int firmware_update_percent;
+
+// These are to provide some thread safety while
+// externing variables
+std::string current_update_process_copy;
+std::string current_update_error_copy;
+
 void progressUpdate(const char* progress_update);
 void percentComplete(int percent_complete);
-void errorMessage(const char* current_error_message);
+void errorMessage(const char* error_message);
 void firmwareUpdateComplete(bool flash_successful);
 
 int main(void) {
@@ -88,6 +100,9 @@ int main(void) {
   hdmi_tools = Conflux::HdmiTools::GetInstance();
   if (hdmi_tools->Initialize()) {
     firmware_update_available = hdmi_tools->IsUpdateAvailable(Conflux::UpdateSource::WORKING_DIRECTORY);
+    current_update_process = "";
+    current_update_error = "";
+    firmware_update_percent = 0;
   }
 #endif
 
@@ -200,9 +215,23 @@ int main(void) {
       }
     }
 
-    if(start_firmware_update)
+    if (firmware_update_available && start_firmware_update)
     {
-      // TODO
+      start_firmware_update = false;
+      firmware_update_started = firmware_update_in_progress = true;
+      hdmi_tools->UpdateFirmware(Conflux::UpdateSource::WORKING_DIRECTORY, (*progressUpdate),
+                                                                           (*percentComplete),
+                                                                           (*errorMessage),
+                                                                           (*firmwareUpdateComplete));
+
+    }
+
+    if(firmware_update_in_progress)
+    {
+      mutex_object.lock();
+        current_update_process_copy = std::string(current_update_process);
+        current_update_error_copy = std::string(current_update_error);
+      mutex_object.unlock();
     }
 
     // Check for events
@@ -231,17 +260,29 @@ int main(void) {
 
 void progressUpdate(const char* progress_update)
 {
-
+  mutex_object.lock();
+    current_update_process = std::string(progress_update);
+  mutex_object.unlock();
 }
 void percentComplete(int percent_complete)
 {
-
+  firmware_update_percent = percent_complete;
 }
-void errorMessage(const char* current_error_message)
+void errorMessage(const char* error_message)
 {
-
+  mutex_object.lock();
+    current_update_error = error_message;
+  mutex_object.unlock();
 }
 void firmwareUpdateComplete(bool flash_successful)
 {
-
+  firmware_update_succeeded = flash_successful;
+  firmware_update_in_progress = false;
+  firmware_update_percent = 0;
+  mutex_object.lock();
+    current_update_process = "";
+    current_update_error = "";
+    current_update_process_copy = "";
+    current_update_error_copy = "";
+  mutex_object.unlock();
 }
