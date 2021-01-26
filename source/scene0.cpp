@@ -10,11 +10,13 @@
 
 #include "common.h"
 #include "i2c_map.h"
+#include "HdmiTools.h"
 
 extern SDL_Renderer *gRenderer;
 extern TTF_Font *gFontSmall;
 extern uint8_t load_scene;
 extern bool running;
+extern Conflux::HdmiTools* hdmi_tools;
 
 Scene0::Scene0() {
   background_texture =
@@ -23,39 +25,22 @@ Scene0::Scene0() {
 
   current_item = 0;
 
-  // Attempt to recieve firmware version
-  ULONG smbus_read;
-
-  //
-  if(HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_FIRMWARE_VERSION + 0, false, &smbus_read) != 0) {
-    snprintf(text_buffer, sizeof(text_buffer), "XboxHDMI not detected!");
-  } else {
-    firmware_version[0] = (uint8_t)smbus_read;
-
-    HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_FIRMWARE_VERSION + 1, false, &smbus_read);
-    firmware_version[1] = (uint8_t)smbus_read;
-
-    HalReadSMBusValue(I2C_HDMI_ADRESS, I2C_FIRMWARE_VERSION + 2, false, &smbus_read);
-    firmware_version[2] = (uint8_t)smbus_read;
-
-    // Firmware 1.0.0 will incorrectly report 0.0.0, so let's fix that.
-    if(firmware_version[0] == 0 && firmware_version[1] == 0 && firmware_version[2] == 0) {
-      firmware_version[0] = 1;
-    }
-
-    snprintf(text_buffer, sizeof(text_buffer), "Firmware Version: %u.%u.%u",
-      firmware_version[0], firmware_version[1], firmware_version[2]);
-  }
+  // Get firmware version
+  snprintf(text_buffer, sizeof(text_buffer), "Firmware Version: %s",
+      hdmi_tools->GetFirmwareVersion().GetVersionCodeAsCString());
 
   info_line[0] = drawText(gFontSmall, font_color, text_buffer);
   SDL_QueryTexture(info_line[0], NULL, NULL,
                    &info_line_pos[0].w,
                    &info_line_pos[0].h);
 
-  //
-  if(findKernelPatchVersion(kernel_patch_version)) {
+  // Get kernel version
+  int kernel_patch_major = hdmi_tools->GetKernelPatchVersion().GetMajor();
+  int kernel_patch_minor = hdmi_tools->GetKernelPatchVersion().GetMinor();
+  int kernel_patch_patch = hdmi_tools->GetKernelPatchVersion().GetPatch();
+  if (kernel_patch_major || kernel_patch_minor || kernel_patch_patch) {
     snprintf(text_buffer, sizeof(text_buffer), "Kernel Patch Version: %u.%u.%u",
-      kernel_patch_version[0], kernel_patch_version[1], kernel_patch_version[2]);
+      kernel_patch_major, kernel_patch_minor, kernel_patch_patch);
   } else {
     snprintf(text_buffer, sizeof(text_buffer), "Kernel patch not detected!");
   }
@@ -103,22 +88,6 @@ void Scene0::event(SDL_Event event) {
     default:
       break;
   }
-}
-
-bool Scene0::findKernelPatchVersion(uint8_t *version) {
-  char tag[] = "HDMIkv";
-
-  for(uint16_t offset = 0; offset < 0x00001000; offset++) {
-    if(memcmp(tag, ((char *)&AvSetDisplayMode) + offset, sizeof(tag) - 1) == 0) {
-      version[0] = (((char *)&AvSetDisplayMode) + offset)[6];
-      version[1] = (((char *)&AvSetDisplayMode) + offset)[7];
-      version[2] = (((char *)&AvSetDisplayMode) + offset)[8];
-
-      return true;
-    }
-  }
-
-  return false;
 }
 
 void Scene0::render(SDL_Renderer *renderer) {

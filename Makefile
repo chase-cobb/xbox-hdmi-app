@@ -6,9 +6,13 @@ DEBUG = y
 CFLAGS="-D_XBOX"
 CXXFLAGS="-D_XBOX"
 
-NXDK_DIR ?= $(CURDIR)/../nxdk
+#NXDK_DIR ?= $(CURDIR)/../nxdk
 
 ASSETS_DIR = $(OUTPUT_DIR)/assets
+
+CONFLUX_SOURCE = $(CURDIR)/vendor/Conflux-HDMI/Source
+
+include $(CONFLUX_SOURCE)/Makefile
 
 SRCS += $(CURDIR)/source/main.cpp
 SRCS += $(CURDIR)/source/common.cpp

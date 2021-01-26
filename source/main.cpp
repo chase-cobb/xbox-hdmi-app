@@ -10,6 +10,7 @@
 #include <hal/video.h>
 #include <hal/xbox.h>
 #include <windows.h>
+#include "HdmiTools.h"
 #define FONT_PATH "D:\\assets\\fonts\\RobotoMono-Regular.ttf"
 #else
 #include <SDL2/SDL.h>
@@ -65,9 +66,29 @@ uint8_t load_scene = 0;
 
 bool running = true;
 
+Conflux::HdmiTools* hdmi_tools;
+
+bool firmware_update_available = false;
+bool start_firmware_update = false;
+bool firmware_update_started = false;
+bool firmware_update_in_progress = false;
+bool firmware_update_succeeded = false;
+
+void progressUpdate(const char* progress_update);
+void percentComplete(int percent_complete);
+void errorMessage(const char* current_error_message);
+void firmwareUpdateComplete(bool flash_successful);
+
 int main(void) {
 #ifdef _XBOX
   XVideoSetMode(SCREEN_WIDTH, SCREEN_HEIGHT, 32, REFRESH_DEFAULT);
+
+  // Initialize Conflux and check for firmware update
+  // in the working directory.
+  hdmi_tools = Conflux::HdmiTools::GetInstance();
+  if (hdmi_tools->Initialize()) {
+    firmware_update_available = hdmi_tools->IsUpdateAvailable(Conflux::UpdateSource::WORKING_DIRECTORY);
+  }
 #endif
 
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0) {
@@ -179,6 +200,11 @@ int main(void) {
       }
     }
 
+    if(start_firmware_update)
+    {
+      // TODO
+    }
+
     // Check for events
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -200,4 +226,22 @@ int main(void) {
   }
 
   return 0;
+}
+
+
+void progressUpdate(const char* progress_update)
+{
+
+}
+void percentComplete(int percent_complete)
+{
+
+}
+void errorMessage(const char* current_error_message)
+{
+
+}
+void firmwareUpdateComplete(bool flash_successful)
+{
+
 }
